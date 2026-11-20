@@ -9,9 +9,16 @@ const wakeLockBtn = document.getElementById('wakeLockBtn');
 const minusBtn = document.getElementById('minusBtn');
 const plusBtn = document.getElementById('plusBtn');
 
-let currentBattery = 85;
+let currentBattery = 50; // Fallback only if no param
 let isCharging = true;
 let wakeLock = null;
+
+// Read real battery passed from iOS Shortcuts (?battery=57)
+const urlParams = new URLSearchParams(window.location.search);
+const batteryFromUrl = urlParams.get('battery') || urlParams.get('b') || urlParams.get('level');
+if (batteryFromUrl !== null && !isNaN(parseInt(batteryFromUrl, 10))) {
+    currentBattery = Math.min(100, Math.max(1, parseInt(batteryFromUrl, 10)));
+}
 
 // Themes
 const themes = [
@@ -22,7 +29,6 @@ const themes = [
 ];
 let currentThemeIndex = 0;
 
-// Apply Theme
 function applyTheme(index) {
     const theme = themes[index];
     document.documentElement.style.setProperty('--primary-color', theme.primary);
@@ -82,11 +88,14 @@ function updateDisplay(level, charging) {
     }
 }
 
-// Native Battery API detection
+// Initial display
+updateDisplay(currentBattery, isCharging);
+
+// Native Battery API detection (for devices that support it)
 if ('getBattery' in navigator) {
     navigator.getBattery().then(battery => {
         function readBattery() {
-            currentBattery = battery.level * 100;
+            currentBattery = Math.round(battery.level * 100);
             isCharging = battery.charging;
             updateDisplay(currentBattery, isCharging);
         }
@@ -97,10 +106,27 @@ if ('getBattery' in navigator) {
             if (battery.charging) playChime(660);
         });
     });
-} else {
-    // Fallback if browser restricts Battery API
-    updateDisplay(currentBattery, isCharging);
 }
+
+// Live charging accumulation (iPhone XS fast charges ~1% every 80 seconds)
+setInterval(() => {
+    if (isCharging && currentBattery < 100) {
+        currentBattery += 1;
+        updateDisplay(currentBattery, true);
+        if (currentBattery === 100) {
+            playChime(880);
+        }
+    }
+}, 80000);
+
+// Tap battery to edit manually if ever needed
+batteryPercentEl.addEventListener('click', () => {
+    const val = prompt('বর্তমান চার্জ পার্সেন্টেজ লিখুন:', currentBattery);
+    if (val !== null && !isNaN(parseInt(val, 10))) {
+        currentBattery = Math.min(100, Math.max(1, parseInt(val, 10)));
+        updateDisplay(currentBattery, isCharging);
+    }
+});
 
 // Manual adjustments
 minusBtn.addEventListener('click', () => {
@@ -113,7 +139,7 @@ plusBtn.addEventListener('click', () => {
     if (currentBattery === 100) playChime(880);
 });
 
-// Screen Wake Lock API (Keep Screen ON without sleeping!)
+// Screen Wake Lock API
 async function requestWakeLock() {
     try {
         if ('wakeLock' in navigator) {
@@ -123,8 +149,6 @@ async function requestWakeLock() {
             wakeLock.addEventListener('release', () => {
                 wakeLockBtn.textContent = '🔓 স্ক্রিন অন রাখুন (WakeLock)';
             });
-        } else {
-            wakeLockBtn.textContent = '⚠️ আপনার ব্রাউজারে WakeLock সক্রিয় নেই';
         }
     } catch (err) {
         console.error(`${err.name}, ${err.message}`);
@@ -136,7 +160,6 @@ wakeLockBtn.addEventListener('click', () => {
     playChime(580);
 });
 
-// Auto-request wake lock on page load / touch
 document.addEventListener('visibilitychange', async () => {
     if (wakeLock !== null && document.visibilityState === 'visible') {
         await requestWakeLock();
