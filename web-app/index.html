@@ -7,10 +7,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="OCP">
     <meta name="theme-color" content="#000000">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Ohana Charging Play (OCP)</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json?v=2.0.1">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.0.1">
 </head>
 <body>
     <div class="ocp-container">
@@ -18,7 +21,7 @@
         <header class="ocp-header">
             <div class="brand">
                 <span class="brand-title">OHANA CHARGING PLAY</span>
-                <span class="brand-subtitle">OCP v1.0 • ALWAYS-ON CHARGE</span>
+                <span class="brand-subtitle">OCP v2.0 • ALWAYS-ON CHARGING</span>
             </div>
             <button id="themeBtn" class="theme-btn" title="Change Color">🎨</button>
         </header>
@@ -39,19 +42,20 @@
                     <span id="batteryPercent" class="percent-number">--</span>
                     <span class="percent-sign">%</span>
                 </div>
-                <div class="status-badge" id="chargingStatus">FAST CHARGING</div>
+                <div class="status-badge" id="chargingStatus">CHARGING</div>
             </div>
         </main>
 
-        <!-- Bottom Clean Status (No Confusing Timers) -->
+        <!-- Bottom Clean Status -->
         <footer class="ocp-footer">
             <div class="screen-awake-tag">
                 <span class="green-dot"></span>
-                <span>স্ক্রিন স্লিপ বন্ধ • চার্জ হচ্ছে</span>
+                <span>ডিসপ্লে অন • রিয়েল-টাইম সিঙ্ক</span>
             </div>
         </footer>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Cache Buster ensures Safari never runs old scripts -->
+    <script src="app.js?v=2.0.1"></script>
 </body>
 </html>

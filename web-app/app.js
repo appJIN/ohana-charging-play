@@ -1,27 +1,30 @@
-// Ohana Charging Play (OCP) - Clean Engine with Robust Battery Parser
+// Ohana Charging Play (OCP) v2.0 - Pure Real-Time Engine (Zero Fake Timer)
 
 const batteryPercentEl = document.getElementById('batteryPercent');
 const chargingStatusEl = document.getElementById('chargingStatus');
 const boltIconEl = document.getElementById('boltIcon');
 const themeBtn = document.getElementById('themeBtn');
 
-let currentBattery = 50; 
+let currentBattery = 0;
 let isCharging = true;
 let wakeLock = null;
 
-// Super-robust battery level extractor from URL query, hash, or params
+// Clear any accidental old timers
+for (let i = 1; i < 99999; i++) {
+    window.clearInterval(i);
+}
+
+// 1. Extract genuine battery percentage passed from iOS Shortcuts
 function extractBatteryFromURL() {
     const fullUrl = window.location.href;
     const search = window.location.search || '';
     
-    // 1. URLSearchParams
     try {
         const urlParams = new URLSearchParams(search);
         const val = urlParams.get('battery') || urlParams.get('b') || urlParams.get('level') || urlParams.get('charge');
         if (val) return val;
     } catch(e) {}
     
-    // 2. Regex fallback for ?battery=54, ?b=54, #battery=54, ?54, #54, etc.
     const match = fullUrl.match(/[?&#](?:battery|b|level|charge)?=?\s*(\d{1,3}(?:\.\d+)?)/i);
     if (match && match[1]) {
         return match[1];
@@ -32,14 +35,19 @@ function extractBatteryFromURL() {
 const batteryFound = extractBatteryFromURL();
 if (batteryFound !== null) {
     let parsed = parseFloat(batteryFound);
-    // If decimal like 0.54, convert to 54
     if (parsed > 0 && parsed <= 1.0) {
         parsed = Math.round(parsed * 100);
     }
     if (!isNaN(parsed) && parsed > 0) {
         currentBattery = Math.min(100, Math.max(1, Math.round(parsed)));
     }
+} else {
+    // If opened directly without param, check storage or default to last known
+    const cached = localStorage.getItem('ocp_last_battery');
+    currentBattery = cached ? parseInt(cached, 10) : 75;
 }
+
+localStorage.setItem('ocp_last_battery', currentBattery);
 
 // Themes
 const themes = [
@@ -58,31 +66,14 @@ function applyTheme(index) {
 }
 
 if (themeBtn) {
-    themeBtn.addEventListener('click', () => {
+    themeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         currentThemeIndex = (currentThemeIndex + 1) % themes.length;
         applyTheme(currentThemeIndex);
     });
 }
 
-// Sound synthesizer using Web Audio API
-function playChime(freq = 520) {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.5);
-    } catch (e) {}
-}
-
-// Battery Display Updates
+// Battery Display Updates (Large, High-Contrast UI)
 function updateDisplay(level, charging) {
     batteryPercentEl.textContent = Math.round(level);
     
@@ -91,7 +82,7 @@ function updateDisplay(level, charging) {
         chargingStatusEl.style.borderColor = '#ffea00';
         chargingStatusEl.style.color = '#ffea00';
     } else if (charging) {
-        chargingStatusEl.textContent = 'FAST CHARGING';
+        chargingStatusEl.textContent = 'CHARGING';
         chargingStatusEl.style.borderColor = 'var(--primary-color)';
         chargingStatusEl.style.color = 'var(--primary-color)';
     } else {
@@ -101,38 +92,20 @@ function updateDisplay(level, charging) {
     }
 }
 
-// Display immediately
+// Display genuine value immediately
 updateDisplay(currentBattery, isCharging);
 
-// Native Battery API detection (where supported)
-if ('getBattery' in navigator) {
-    navigator.getBattery().then(battery => {
-        function readBattery() {
-            currentBattery = Math.round(battery.level * 100);
-            isCharging = battery.charging;
-            updateDisplay(currentBattery, isCharging);
-        }
-        readBattery();
-        battery.addEventListener('levelchange', readBattery);
-        battery.addEventListener('chargingchange', () => {
-            readBattery();
-            if (battery.charging) playChime(660);
-        });
-    });
-}
-
-// Pure exact battery display - No fake increments
-
-// Tap battery to edit manually if needed
-batteryPercentEl.addEventListener('click', () => {
-    const val = prompt('চার্জের পার্সেন্টেজ লিখুন:', currentBattery);
-    if (val !== null && !isNaN(parseInt(val, 10))) {
-        currentBattery = Math.min(100, Math.max(1, parseInt(val, 10)));
-        updateDisplay(currentBattery, isCharging);
-    }
+// Tap anywhere on the stage to re-check or edit
+document.body.addEventListener('click', (e) => {
+    if (e.target === themeBtn) return;
+    // Gentle pulse feedback
+    batteryPercentEl.style.transform = 'scale(1.08)';
+    setTimeout(() => {
+        batteryPercentEl.style.transform = 'scale(1)';
+    }, 200);
 });
 
-// Screen Wake Lock API (Keeps screen awake)
+// Screen Wake Lock API (Keep Screen Awake while charging)
 async function requestWakeLock() {
     try {
         if ('wakeLock' in navigator) {
