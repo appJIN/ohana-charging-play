@@ -1,4 +1,4 @@
-// Ohana Charging Play (OCP) - Clean Engine
+// Ohana Charging Play (OCP) - Clean Engine with Robust Battery Parser
 
 const batteryPercentEl = document.getElementById('batteryPercent');
 const chargingStatusEl = document.getElementById('chargingStatus');
@@ -9,11 +9,36 @@ let currentBattery = 50;
 let isCharging = true;
 let wakeLock = null;
 
-// Read real battery passed from iOS Shortcuts (?battery=57)
-const urlParams = new URLSearchParams(window.location.search);
-const batteryFromUrl = urlParams.get('battery') || urlParams.get('b') || urlParams.get('level');
-if (batteryFromUrl !== null && !isNaN(parseInt(batteryFromUrl, 10))) {
-    currentBattery = Math.min(100, Math.max(1, parseInt(batteryFromUrl, 10)));
+// Super-robust battery level extractor from URL query, hash, or params
+function extractBatteryFromURL() {
+    const fullUrl = window.location.href;
+    const search = window.location.search || '';
+    
+    // 1. URLSearchParams
+    try {
+        const urlParams = new URLSearchParams(search);
+        const val = urlParams.get('battery') || urlParams.get('b') || urlParams.get('level') || urlParams.get('charge');
+        if (val) return val;
+    } catch(e) {}
+    
+    // 2. Regex fallback for ?battery=54, ?b=54, #battery=54, ?54, #54, etc.
+    const match = fullUrl.match(/[?&#](?:battery|b|level|charge)?=?\s*(\d{1,3}(?:\.\d+)?)/i);
+    if (match && match[1]) {
+        return match[1];
+    }
+    return null;
+}
+
+const batteryFound = extractBatteryFromURL();
+if (batteryFound !== null) {
+    let parsed = parseFloat(batteryFound);
+    // If decimal like 0.54, convert to 54
+    if (parsed > 0 && parsed <= 1.0) {
+        parsed = Math.round(parsed * 100);
+    }
+    if (!isNaN(parsed) && parsed > 0) {
+        currentBattery = Math.min(100, Math.max(1, Math.round(parsed)));
+    }
 }
 
 // Themes
