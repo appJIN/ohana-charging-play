@@ -121,16 +121,7 @@ if ('getBattery' in navigator) {
     });
 }
 
-// Live charging accumulation (iPhone XS fast charges ~1% every 80 seconds)
-setInterval(() => {
-    if (isCharging && currentBattery < 100) {
-        currentBattery += 1;
-        updateDisplay(currentBattery, true);
-        if (currentBattery === 100) {
-            playChime(880);
-        }
-    }
-}, 80000);
+// Pure exact battery display - No fake increments
 
 // Tap battery to edit manually if needed
 batteryPercentEl.addEventListener('click', () => {
