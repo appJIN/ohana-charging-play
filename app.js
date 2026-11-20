@@ -1,15 +1,11 @@
-// Ohana Charging Play (OCP) - Web App Engine
+// Ohana Charging Play (OCP) - Clean Engine
 
 const batteryPercentEl = document.getElementById('batteryPercent');
 const chargingStatusEl = document.getElementById('chargingStatus');
 const boltIconEl = document.getElementById('boltIcon');
-const clockDisplayEl = document.getElementById('clockDisplay');
 const themeBtn = document.getElementById('themeBtn');
-const wakeLockBtn = document.getElementById('wakeLockBtn');
-const minusBtn = document.getElementById('minusBtn');
-const plusBtn = document.getElementById('plusBtn');
 
-let currentBattery = 50; // Fallback only if no param
+let currentBattery = 50; 
 let isCharging = true;
 let wakeLock = null;
 
@@ -36,18 +32,12 @@ function applyTheme(index) {
     document.documentElement.style.setProperty('--secondary-color', theme.secondary);
 }
 
-themeBtn.addEventListener('click', () => {
-    currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-    applyTheme(currentThemeIndex);
-});
-
-// Real-time Clock
-function updateClock() {
-    const now = new Date();
-    clockDisplayEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+        currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+        applyTheme(currentThemeIndex);
+    });
 }
-setInterval(updateClock, 1000);
-updateClock();
 
 // Sound synthesizer using Web Audio API
 function playChime(freq = 520) {
@@ -64,9 +54,7 @@ function playChime(freq = 520) {
         gain.connect(audioCtx.destination);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.5);
-    } catch (e) {
-        console.log('AudioContext not allowed yet');
-    }
+    } catch (e) {}
 }
 
 // Battery Display Updates
@@ -88,10 +76,10 @@ function updateDisplay(level, charging) {
     }
 }
 
-// Initial display
+// Display immediately
 updateDisplay(currentBattery, isCharging);
 
-// Native Battery API detection (for devices that support it)
+// Native Battery API detection (where supported)
 if ('getBattery' in navigator) {
     navigator.getBattery().then(battery => {
         function readBattery() {
@@ -119,46 +107,23 @@ setInterval(() => {
     }
 }, 80000);
 
-// Tap battery to edit manually if ever needed
+// Tap battery to edit manually if needed
 batteryPercentEl.addEventListener('click', () => {
-    const val = prompt('বর্তমান চার্জ পার্সেন্টেজ লিখুন:', currentBattery);
+    const val = prompt('চার্জের পার্সেন্টেজ লিখুন:', currentBattery);
     if (val !== null && !isNaN(parseInt(val, 10))) {
         currentBattery = Math.min(100, Math.max(1, parseInt(val, 10)));
         updateDisplay(currentBattery, isCharging);
     }
 });
 
-// Manual adjustments
-minusBtn.addEventListener('click', () => {
-    currentBattery = Math.max(1, currentBattery - 5);
-    updateDisplay(currentBattery, isCharging);
-});
-plusBtn.addEventListener('click', () => {
-    currentBattery = Math.min(100, currentBattery + 5);
-    updateDisplay(currentBattery, isCharging);
-    if (currentBattery === 100) playChime(880);
-});
-
-// Screen Wake Lock API
+// Screen Wake Lock API (Keeps screen awake)
 async function requestWakeLock() {
     try {
         if ('wakeLock' in navigator) {
             wakeLock = await navigator.wakeLock.request('screen');
-            wakeLockBtn.textContent = '✅ স্ক্রিন লক অফ (স্ক্রিন বন্ধ হবে না)';
-            wakeLockBtn.style.borderColor = 'var(--primary-color)';
-            wakeLock.addEventListener('release', () => {
-                wakeLockBtn.textContent = '🔓 স্ক্রিন অন রাখুন (WakeLock)';
-            });
         }
-    } catch (err) {
-        console.error(`${err.name}, ${err.message}`);
-    }
+    } catch (err) {}
 }
-
-wakeLockBtn.addEventListener('click', () => {
-    requestWakeLock();
-    playChime(580);
-});
 
 document.addEventListener('visibilitychange', async () => {
     if (wakeLock !== null && document.visibilityState === 'visible') {
@@ -167,3 +132,4 @@ document.addEventListener('visibilitychange', async () => {
 });
 window.addEventListener('touchstart', requestWakeLock, { once: true });
 window.addEventListener('click', requestWakeLock, { once: true });
+requestWakeLock();

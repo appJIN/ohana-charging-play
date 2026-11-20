@@ -36,29 +36,18 @@
             <div class="hud-center">
                 <div class="bolt-icon" id="boltIcon">⚡</div>
                 <div class="percent-container">
-                    <span id="batteryPercent" class="percent-number">88</span>
+                    <span id="batteryPercent" class="percent-number">--</span>
                     <span class="percent-sign">%</span>
                 </div>
                 <div class="status-badge" id="chargingStatus">FAST CHARGING</div>
             </div>
         </main>
 
-        <!-- Bottom Status & Clock -->
+        <!-- Bottom Clean Status (No Confusing Timers) -->
         <footer class="ocp-footer">
-            <div class="clock-display" id="clockDisplay">12:00:00 PM</div>
             <div class="screen-awake-tag">
                 <span class="green-dot"></span>
-                <span>স্ক্রিন স্লিপ বন্ধ (Always Awake)</span>
-            </div>
-
-            <!-- Tap to trigger WakeLock or simulate on desktop -->
-            <div class="controls-drawer">
-                <button id="wakeLockBtn" class="action-btn">🔓 স্ক্রিন অন রাখুন (WakeLock)</button>
-                <div class="manual-adjust" id="adjustPanel">
-                    <button class="step-btn" id="minusBtn">-5%</button>
-                    <span class="hint-text">ব্যাটারি টেস্ট</span>
-                    <button class="step-btn" id="plusBtn">+5%</button>
-                </div>
+                <span>স্ক্রিন স্লিপ বন্ধ • চার্জ হচ্ছে</span>
             </div>
         </footer>
     </div>
