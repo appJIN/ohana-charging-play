@@ -19,9 +19,6 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
     - name: Setup Gradle 8.4
       uses: gradle/actions/setup-gradle@v3
       with:
@@ -30,7 +27,6 @@ jobs:
     - name: Build Debug APK
       run: |
         cd android-app
-        echo "sdk.dir=$ANDROID_HOME" > local.properties
         gradle assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK Artifact
